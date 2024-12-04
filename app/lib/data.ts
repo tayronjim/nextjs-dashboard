@@ -157,7 +157,7 @@ export async function fetchInvoicesPages(myquery: string) {
 
 export async function fetchInvoiceById(id: string) {
   try {
-    const data = await sql<InvoiceForm>`
+    const data = await query(`
       SELECT
         invoices.id,
         invoices.customer_id,
@@ -165,9 +165,9 @@ export async function fetchInvoiceById(id: string) {
         invoices.status
       FROM invoices
       WHERE invoices.id = ${id};
-    `;
+    `) as InvoiceForm[];
 
-    const invoice = data.rows.map((invoice) => ({
+    const invoice = data.map((invoice) => ({
       ...invoice,
       // Convert amount from cents to dollars
       amount: invoice.amount / 100,
@@ -198,9 +198,9 @@ export async function fetchCustomers() {
   }
 }
 
-export async function fetchFilteredCustomers(query: string) {
+export async function fetchFilteredCustomers(myquery: string) {
   try {
-    const data = await sql<CustomersTableType>`
+    const data = await query(`
 		SELECT
 		  customers.id,
 		  customers.name,
@@ -212,13 +212,13 @@ export async function fetchFilteredCustomers(query: string) {
 		FROM customers
 		LEFT JOIN invoices ON customers.id = invoices.customer_id
 		WHERE
-		  customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`}
+		  customers.name LIKE '%${myquery}%' OR
+        customers.email LIKE '%${myquery}%'
 		GROUP BY customers.id, customers.name, customers.email, customers.image_url
 		ORDER BY customers.name ASC
-	  `;
+	  `) as CustomersTableType[];
 
-    const customers = data.rows.map((customer) => ({
+    const customers = data.map((customer) => ({
       ...customer,
       total_pending: formatCurrency(customer.total_pending),
       total_paid: formatCurrency(customer.total_paid),
